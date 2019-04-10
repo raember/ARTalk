@@ -2,9 +2,9 @@ import unittest
 from artalk.codeblocks import MemoryWrite, Conditional32bitCodes, Conditions, Conditional16bitCodes
 from artalk.codeblocks import OutOfRangeError
 from artalk.codeblocks import WWrite, SWrite, BWrite, WGreaterThan, WLessThan, WEqualTo, WNotEqualTo, \
-    SGreaterThan, SLessThan, SEqualTo, SNotEqualTo, LoadOffset, Repeat, ConditionEnd, RepetitionEnd, Reset, SetOffset, \
+    SGreaterThan, SLessThan, SEqualTo, SNotEqualTo, LoadOffset, Repeat, ConditionEnd, RepetitionEnd, Reset, SetOffset1, \
     AddToDxData, SetDxData, DxDataWordWrite, DxDataShortWrite, DxDataByteWrite, DxDataWordRead, DxDataShortRead, \
-    DxDataByteRead, AddToOffset, WaitForButton, Memory
+    SetOffset2, DxDataByteRead, AddToOffset, WaitForButton, Memory
 
 
 class TestMemoryWrite(unittest.TestCase):
@@ -518,54 +518,144 @@ class TestSEqualTo(unittest.TestCase):
         )
 
 
-class TestSNotEqualTo(unittest.TestCase):
-    FIRST = 0xA0020200
-    SECOND = 0x00AA000F
+class TestLoadOffset(unittest.TestCase):
+    FIRST = 0xB0020200
+    SECOND = 0x00000000
 
     def test_constructor(self):
-        block = SNotEqualTo(0xF, 0x00020200, 0xAA)
+        block = LoadOffset(0x00020200)
         self.assertEqual(f"{self.FIRST:08X} {self.SECOND:08X}", str(block))
         self.assertEqual(0x20200, block.address)
-        self.assertEqual(0xF, block.value)
-        self.assertEqual(0xAA, block.mask)
         self.assertEqual("0x00020200", block.hex_address())
-        self.assertEqual("0x000F", block.hex_value())
 
     def test_constructor_neg(self):
-        SNotEqualTo(0xFFFF, 0xFFFFFFF, 0xFFFF)
-        SNotEqualTo(0, 0, 0)
-        self.assertRaises(OutOfRangeError, SNotEqualTo, -1, 0xFFFFFFF, 0xFFFF)
-        self.assertRaises(OutOfRangeError, SNotEqualTo, 0xFFFF, -1, 0xFFFF)
-        self.assertRaises(OutOfRangeError, SNotEqualTo, 0xFFFF, 0xFFFFFFF, -1)
-        self.assertRaises(OutOfRangeError, SNotEqualTo, 0x10000, 0xFFFFFFF, 0xFFFF)
-        self.assertRaises(OutOfRangeError, SNotEqualTo, 0xFFFF, 0x10000000, 0xFFFF)
-        self.assertRaises(OutOfRangeError, SNotEqualTo, 0xFFFF, 0xFFFFFFF, 0x10000)
+        LoadOffset(0xFFFFFFF)
+        LoadOffset(0)
+        self.assertRaises(OutOfRangeError, LoadOffset, -1)
+        self.assertRaises(OutOfRangeError, LoadOffset, 0x10000000)
 
     def test_parse(self):
-        block = SNotEqualTo.parse(f"{self.FIRST:08X}", f"{self.SECOND:08X}")
+        block = LoadOffset.parse(f"{self.FIRST:08X}", f"{self.SECOND:08X}")
         self.assertIsNotNone(block)
-        self.assertEqual(SNotEqualTo, type(block))
+        self.assertEqual(LoadOffset, type(block))
         self.assertEqual(f"{self.FIRST:08X} {self.SECOND:08X}", str(block))
-        self.assertEqual(0xF, block.value)
         self.assertEqual(0x20200, block.address)
-        self.assertEqual("0x000F", block.hex_value())
         self.assertEqual("0x00020200", block.hex_address())
 
     def test_to_c(self):
-        block = SNotEqualTo(0xF, 0x20200, 0xAA)
-        self.assertEqual("assert(0x000F != (*((int*)0x00020200 + offset) & ~0x00AA);", block.to_c())
-        self.assertEqual(
-            "assert(0x000F /* 15 */ != (*((int*)0x00020200 + offset) & ~0x00AA /* 170 */);",
-            block.to_c(True)
-        )
+        block = LoadOffset(0x20200)
+        self.assertEqual("offset = *((int*)0x00020200 + offset);", block.to_c())
+        self.assertEqual("offset = *((int*)0x00020200 + offset);", block.to_c(True))
 
     def test_to_human_readable(self):
-        block = SNotEqualTo(0xF, 0x20200, 0xAA)
-        self.assertEqual("Assert that 0x000F != ([0x00020200 + offset] & ~0x00AA)", block.to_human_readable())
-        self.assertEqual(
-            "Assert that 0x000F(15) != ([0x00020200 + offset] & ~0x00AA(170))",
-            block.to_human_readable(True)
-        )
+        block = LoadOffset(0x20200)
+        self.assertEqual("Load offset from [0x00020200 + offset]", block.to_human_readable())
+        self.assertEqual("Load offset from [0x00020200 + offset]", block.to_human_readable(True))
+
+
+class TestSetOffset1(unittest.TestCase):
+    FIRST = 0xD3000000
+    SECOND = 0x12345678
+
+    def test_constructor(self):
+        block = SetOffset1(0x12345678)
+        self.assertEqual(f"{self.FIRST:08X} {self.SECOND:08X}", str(block))
+        self.assertEqual(0x12345678, block.value)
+        self.assertEqual("0x12345678", block.hex_value())
+
+    def test_constructor_neg(self):
+        SetOffset1(0xFFFFFFFF)
+        SetOffset1(0)
+        self.assertRaises(OutOfRangeError, SetOffset1, -1)
+        self.assertRaises(OutOfRangeError, SetOffset1, 0x100000000)
+
+    def test_parse(self):
+        block = SetOffset1.parse(f"{self.FIRST:08X}", f"{self.SECOND:08X}")
+        self.assertIsNotNone(block)
+        self.assertEqual(SetOffset1, type(block))
+        self.assertEqual(f"{self.FIRST:08X} {self.SECOND:08X}", str(block))
+        self.assertEqual(0x12345678, block.value)
+        self.assertEqual("0x12345678", block.hex_value())
+
+    def test_to_c(self):
+        block = SetOffset1(0x12345678)
+        self.assertEqual("offset = 0x12345678;", block.to_c())
+        self.assertEqual("offset = 0x12345678 /* 305419896 */;", block.to_c(True))
+
+    def test_to_human_readable(self):
+        block = SetOffset1(0x12345678)
+        self.assertEqual("Set offset to 0x12345678", block.to_human_readable())
+        self.assertEqual("Set offset to 0x12345678(305419896)", block.to_human_readable(True))
+
+
+class TestSetOffset2(unittest.TestCase):
+    FIRST = 0xD3000001
+    SECOND = 0x12345678
+
+    def test_constructor(self):
+        block = SetOffset2(0x12345678)
+        self.assertEqual(f"{self.FIRST:08X} {self.SECOND:08X}", str(block))
+        self.assertEqual(0x12345678, block.value)
+        self.assertEqual("0x12345678", block.hex_value())
+
+    def test_constructor_neg(self):
+        SetOffset2(0xFFFFFFFF)
+        SetOffset2(0)
+        self.assertRaises(OutOfRangeError, SetOffset2, -1)
+        self.assertRaises(OutOfRangeError, SetOffset2, 0x100000000)
+
+    def test_parse(self):
+        block = SetOffset2.parse(f"{self.FIRST:08X}", f"{self.SECOND:08X}")
+        self.assertIsNotNone(block)
+        self.assertEqual(SetOffset2, type(block))
+        self.assertEqual(f"{self.FIRST:08X} {self.SECOND:08X}", str(block))
+        self.assertEqual(0x12345678, block.value)
+        self.assertEqual("0x12345678", block.hex_value())
+
+    def test_to_c(self):
+        block = SetOffset2(0x12345678)
+        self.assertEqual("offset2 = 0x12345678;", block.to_c())
+        self.assertEqual("offset2 = 0x12345678 /* 305419896 */;", block.to_c(True))
+
+    def test_to_human_readable(self):
+        block = SetOffset2(0x12345678)
+        self.assertEqual("Set offset2 to 0x12345678", block.to_human_readable())
+        self.assertEqual("Set offset2 to 0x12345678(305419896)", block.to_human_readable(True))
+
+
+class TestAddToOffset(unittest.TestCase):
+    FIRST = 0xDC000000
+    SECOND = 0x12345678
+
+    def test_constructor(self):
+        block = AddToOffset(0x12345678)
+        self.assertEqual(f"{self.FIRST:08X} {self.SECOND:08X}", str(block))
+        self.assertEqual(0x12345678, block.value)
+        self.assertEqual("0x12345678", block.hex_value())
+
+    def test_constructor_neg(self):
+        AddToOffset(0xFFFFFFFF)
+        AddToOffset(0)
+        self.assertRaises(OutOfRangeError, AddToOffset, -1)
+        self.assertRaises(OutOfRangeError, AddToOffset, 0x100000000)
+
+    def test_parse(self):
+        block = AddToOffset.parse(f"{self.FIRST:08X}", f"{self.SECOND:08X}")
+        self.assertIsNotNone(block)
+        self.assertEqual(AddToOffset, type(block))
+        self.assertEqual(f"{self.FIRST:08X} {self.SECOND:08X}", str(block))
+        self.assertEqual(0x12345678, block.value)
+        self.assertEqual("0x12345678", block.hex_value())
+
+    def test_to_c(self):
+        block = AddToOffset(0x12345678)
+        self.assertEqual("offset += 0x12345678;", block.to_c())
+        self.assertEqual("offset += 0x12345678 /* 305419896 */;", block.to_c(True))
+
+    def test_to_human_readable(self):
+        block = AddToOffset(0x12345678)
+        self.assertEqual("Add 0x12345678 to offset", block.to_human_readable())
+        self.assertEqual("Add 0x12345678(305419896) to offset", block.to_human_readable(True))
 
 
 if __name__ == '__main__':

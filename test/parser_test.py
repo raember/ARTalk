@@ -319,8 +319,8 @@ class BlockFactoryTest(unittest.TestCase):
     def test_SetOffset(self):
         block = self.factory.create_block("D3000000 890ABCDE")
         self.assertIsNotNone(block)
-        from artalk.parser import SetOffset
-        self.assertEqual(SetOffset, type(block))
+        from artalk.parser import SetOffset1
+        self.assertEqual(SetOffset1, type(block))
         self.assertEqual("D3000000", block.first)
         self.assertEqual("890ABCDE", block.second)
         self.assertEqual(2299182302, block.value)

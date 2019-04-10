@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from artalk.codeblocks import Block, Patch, WWrite, SWrite, BWrite, WGreaterThan, WLessThan, \
     WEqualTo, WNotEqualTo, SGreaterThan, SLessThan, SEqualTo, SNotEqualTo, LoadOffset, Repeat, \
-    ConditionEnd, RepetitionEnd, Reset, SetOffset, AddToDxData, SetDxData, DxDataWordWrite, DxDataShortWrite, \
+    ConditionEnd, RepetitionEnd, Reset, SetOffset1, AddToDxData, SetDxData, DxDataWordWrite, DxDataShortWrite, \
     DxDataByteWrite, DxDataWordRead, DxDataShortRead, DxDataByteRead, AddToOffset, WaitForButton, Memory
 
 
@@ -41,7 +41,7 @@ class BlockFactory:
             ConditionEnd,
             RepetitionEnd,
             Reset,
-            SetOffset,
+            SetOffset1,
             AddToDxData,
             SetDxData,
             DxDataWordWrite,

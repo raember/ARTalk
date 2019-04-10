@@ -131,8 +131,8 @@ class WWrite(MemoryWrite, Word):
     @classmethod
     def parse(cls, first: str, second: str) -> Optional[Block]:
         if first[0] == "0":
-            address = int("0x" + first[1:], 0)
-            value = int("0x" + second, 0)
+            address = int(first[1:], 16)
+            value = int(second, 16)
             return WWrite(value, address)
         return None
 
@@ -149,8 +149,8 @@ class SWrite(MemoryWrite, Short):
     @classmethod
     def parse(cls, first: str, second: str) -> Optional[Block]:
         if first[0] == "1" and second[:4] == "0000":
-            address = int("0x" + first[1:], 0)
-            value = int("0x" + second, 0)
+            address = int(first[1:], 16)
+            value = int(second, 16)
             return SWrite(value, address)
         return None
 
@@ -167,8 +167,8 @@ class BWrite(MemoryWrite, Byte):
     @classmethod
     def parse(cls, first: str, second: str) -> Optional[Block]:
         if first[0] == "2" and second[:6] == "000000":
-            address = int("0x" + first[1:], 0)
-            value = int("0x" + second, 0)
+            address = int(first[1:], 16)
+            value = int(second, 16)
             return BWrite(value, address)
         return None
 
@@ -226,8 +226,8 @@ class WGreaterThan(Conditional32bitCodes):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if first[0] == "3":
-            address = int("0x" + first[1:], 0)
-            value = int("0x" + second, 0)
+            address = int(first[1:], 16)
+            value = int(second, 16)
             return WGreaterThan(value, address)
         return None
 
@@ -246,8 +246,8 @@ class WLessThan(Conditional32bitCodes):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if first[0] == "4":
-            address = int("0x" + first[1:], 0)
-            value = int("0x" + second, 0)
+            address = int(first[1:], 16)
+            value = int(second, 16)
             return WLessThan(value, address)
         return None
 
@@ -267,8 +267,8 @@ class WEqualTo(Conditional32bitCodes):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if first[0] == "5":
-            address = int("0x" + first[1:], 0)
-            value = int("0x" + second, 0)
+            address = int(first[1:], 16)
+            value = int(second, 16)
             return WEqualTo(value, address)
         return None
 
@@ -288,8 +288,8 @@ class WNotEqualTo(Conditional32bitCodes):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if first[0] == "6":
-            address = int("0x" + first[1:], 0)
-            value = int("0x" + second, 0)
+            address = int(first[1:], 16)
+            value = int(second, 16)
             return WNotEqualTo(value, address)
         return None
 
@@ -342,9 +342,9 @@ class SGreaterThan(Conditional16bitCodes):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if first[0] == "7":
-            address = int("0x" + first[1:], 0)
-            value = int("0x" + second[4:], 0)
-            mask = int("0x" + second[:4], 0)
+            address = int(first[1:], 16)
+            value = int(second[4:], 16)
+            mask = int(second[:4], 16)
             return SGreaterThan(value, address, mask)
         return None
 
@@ -366,9 +366,9 @@ class SLessThan(Conditional16bitCodes):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if first[0] == "8":
-            address = int("0x" + first[1:], 0)
-            value = int("0x" + second[4:], 0)
-            mask = int("0x" + second[:4], 0)
+            address = int(first[1:], 16)
+            value = int(second[4:], 16)
+            mask = int(second[:4], 16)
             return SLessThan(value, address, mask)
         return None
 
@@ -390,9 +390,9 @@ class SEqualTo(Conditional16bitCodes):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if first[0] == "9":
-            address = int("0x" + first[1:], 0)
-            value = int("0x" + second[4:], 0)
-            mask = int("0x" + second[:4], 0)
+            address = int(first[1:], 16)
+            value = int(second[4:], 16)
+            mask = int(second[:4], 16)
             return SEqualTo(value, address, mask)
         return None
 
@@ -414,9 +414,9 @@ class SNotEqualTo(Conditional16bitCodes):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if first[0] == "A":
-            address = int("0x" + first[1:], 0)
-            value = int("0x" + second[4:], 0)
-            mask = int("0x" + second[:4], 0)
+            address = int(first[1:], 16)
+            value = int(second[4:], 16)
+            mask = int(second[:4], 16)
             return SNotEqualTo(value, address, mask)
         return None
 
@@ -433,22 +433,126 @@ class SNotEqualTo(Conditional16bitCodes):
 
 
 class LoadOffset(Address, Block):
+    def __init__(self, address: int = None):
+        if address is not None:
+            self.address = address
+            self._set_blocks()
+            super(LoadOffset, self).__init__(self.first, self.second)
+        super(LoadOffset, self).__init__()
+
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
-        if cls.first[0] == "B" and cls.second == "00000000":
-            cls.address = int("0x" + cls.first[1:], 0)
-            return cls
+        if first[0] == "B" and second == "00000000":
+            address = int(first[1:], 16)
+            return LoadOffset(address)
         return None
 
-    def __str__(self):
-        return f"{self.OFFSET_LABEL} = *{self.hex_address()}"
+    def _set_blocks(self):
+        if self.address < 0 or self.address > 0xFFFFFFF:
+            raise OutOfRangeError("Address", 0, 0xFFFFFFF, self.address)
+        self.first = f"B{self.address:07X}"
+        self.second = '00000000'
+        return None
+
+    def to_human_readable(self, comments=False):
+        return f"Load offset from [{self.hex_address(True)}]"
+
+    def to_c(self, comments=False):
+        return f"offset = *((int*){self.hex_address(True)});"
+
+
+class SetOffset1(Word, Offset, Block):
+    def __init__(self, value: int = None):
+        if value is not None:
+            self.value = value
+            self._set_blocks()
+            super(SetOffset1, self).__init__(self.first, self.second)
+        super(SetOffset1, self).__init__()
+
+    @classmethod
+    def parse(cls, first="", second="") -> Optional[Block]:
+        if first == "D3000000":
+            value = int(second, 16)
+            return SetOffset1(value)
+        return None
+
+    def _set_blocks(self):
+        if self.value < 0 or self.value > 0xFFFFFFFF:
+            raise OutOfRangeError("Value", 0, 0xFFFFFFFF, self.value)
+        self.first = "D3000000"
+        self.second = f"{self.value:08X}"
+        return None
+
+    def to_human_readable(self, comments=False):
+        return f"Set offset to {self.hex_value(comments)}"
+
+    def to_c(self, comments=False):
+        return f"offset = {self.hex_value(comments, True)};"
+
+
+class SetOffset2(Word, Offset, Block):
+    def __init__(self, value: int = None):
+        if value is not None:
+            self.value = value
+            self._set_blocks()
+            super(SetOffset2, self).__init__(self.first, self.second)
+        super(SetOffset2, self).__init__()
+
+    @classmethod
+    def parse(cls, first="", second="") -> Optional[Block]:
+        if first == "D3000001":
+            value = int(second, 16)
+            return SetOffset2(value)
+        return None
+
+    def _set_blocks(self):
+        if self.value < 0 or self.value > 0xFFFFFFFF:
+            raise OutOfRangeError("Value", 0, 0xFFFFFFFF, self.value)
+        self.first = "D3000001"
+        self.second = f"{self.value:08X}"
+        return None
+
+    def to_human_readable(self, comments=False):
+        return f"Set offset2 to {self.hex_value(comments)}"
+
+    def to_c(self, comments=False):
+        return f"offset2 = {self.hex_value(comments, True)};"
+
+
+class AddToOffset(Word, Offset, Block):
+    def __init__(self, value: int = None):
+        if value is not None:
+            self.value = value
+            self._set_blocks()
+            super(AddToOffset, self).__init__(self.first, self.second)
+        super(AddToOffset, self).__init__()
+
+    @classmethod
+    def parse(cls, first="", second="") -> Optional[Block]:
+        if first == "DC000000":
+            value = int(second, 16)
+            return AddToOffset(value)
+        return None
+
+    def _set_blocks(self):
+        if self.value < 0 or self.value > 0xFFFFFFFF:
+            raise OutOfRangeError("Value", 0, 0xFFFFFFFF, self.value)
+        self.first = "DC000000"
+        self.second = f"{self.value:08X}"
+        return None
+
+    def to_human_readable(self, comments=False):
+        return f"Add {self.hex_value(comments)} to offset"
+
+    def to_c(self, comments=False):
+        return f"offset += {self.hex_value(comments, True)};"
 
 
 class Repeat(Word, Block):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if cls.first == "C0000000":
-            cls.value = int("0x" + cls.second, 0)
+            cls.value = int(cls.second, 16)
             return cls
         return None
 
@@ -471,7 +575,7 @@ class RepetitionEnd(Word, Offset, Block):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if cls.first == "D1000000":
-            cls.value = int("0x" + cls.second, 0)
+            cls.value = int(cls.second, 16)
             return cls
         return None
 
@@ -490,23 +594,11 @@ class Reset(Block):
         return "Reset"
 
 
-class SetOffset(Word, Offset, Block):
-    @classmethod
-    def parse(cls, first="", second="") -> Optional[Block]:
-        if cls.first == "D3000000":
-            cls.value = int("0x" + cls.second, 0)
-            return cls
-        return None
-
-    def __str__(self):
-        return f"{self.OFFSET_LABEL} = {self.hex_value()}"
-
-
 class AddToDxData(Word, Block):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if cls.first == "D4000000":
-            cls.value = int("0x" + cls.second, 0)
+            cls.value = int(cls.second, 16)
             return cls
         return None
 
@@ -518,7 +610,7 @@ class SetDxData(Word, Block):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if cls.first == "D5000000":
-            cls.value = int("0x" + cls.second, 0)
+            cls.value = int(cls.second, 16)
             return cls
         return None
 
@@ -530,7 +622,7 @@ class DxDataWordWrite(Address, Block):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if cls.first == "D6000000":
-            cls.address = int("0x" + cls.second, 0)
+            cls.address = int(cls.second, 16)
             return cls
         return None
 
@@ -542,7 +634,7 @@ class DxDataShortWrite(Address, Block):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if cls.first == "D7000000":
-            cls.address = int("0x" + cls.second, 0)
+            cls.address = int(cls.second, 16)
             return cls
         return None
 
@@ -554,7 +646,7 @@ class DxDataByteWrite(Address, Block):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if cls.first == "D8000000":
-            cls.address = int("0x" + cls.second, 0)
+            cls.address = int(cls.second, 16)
             return cls
         return None
 
@@ -566,7 +658,7 @@ class DxDataWordRead(Address, Block):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if cls.first == "D9000000":
-            cls.address = int("0x" + cls.second, 0)
+            cls.address = int(cls.second, 16)
             return cls
         return None
 
@@ -578,7 +670,7 @@ class DxDataShortRead(Address, Block):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if cls.first == "DA000000":
-            cls.address = int("0x" + cls.second, 0)
+            cls.address = int(cls.second, 16)
             return cls
         return None
 
@@ -590,24 +682,12 @@ class DxDataByteRead(Address, Block):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if cls.first == "DB000000":
-            cls.address = int("0x" + cls.second, 0)
+            cls.address = int(cls.second, 16)
             return cls
         return None
 
     def __str__(self):
         return f"*({self.hex_address(True)}) = byte *{DXDATA_LABEL}; {self.OFFSET_LABEL} ++"
-
-
-class AddToOffset(Word, Offset, Block):
-    @classmethod
-    def parse(cls, first="", second="") -> Optional[Block]:
-        if cls.first == "DC000000":
-            cls.value = int("0x" + cls.second, 0)
-            return cls
-        return None
-
-    def __str__(self):
-        return f"{self.OFFSET_LABEL} += *{self.hex_value()}"
 
 
 class WaitForButton(Block):
@@ -617,7 +697,7 @@ class WaitForButton(Block):
     def parse(cls, first="", second="") -> Optional[Block]:
         cls.buttons = []
         if cls.first == "DD000000" and cls.second != "00000000":
-            btn_code = int("0x" + cls.second, 0)
+            btn_code = int(cls.second, 16)
             if btn_code & 0x1:
                 cls.buttons.append("A")
                 btn_code -= 0x1
@@ -675,8 +755,8 @@ class Patch(Address, Block):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if cls.first[0] == "E":
-            cls.value = int("0x" + cls.second, 0)
-            cls.address = int("0x" + cls.first[1:], 0)
+            cls.value = int(cls.second, 16)
+            cls.address = int(cls.first[1:], 16)
             cls.bytes = ""
             return cls
         return None
@@ -700,8 +780,8 @@ class Memory(Word, Address, Block):
     @classmethod
     def parse(cls, first="", second="") -> Optional[Block]:
         if cls.first[0] == "F":
-            cls.value = int("0x" + cls.second, 0)
-            cls.address = int("0x" + cls.first[1:], 0)
+            cls.value = int(cls.second, 16)
+            cls.address = int(cls.first[1:], 16)
             return cls
         return None
 
